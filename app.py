@@ -109,6 +109,7 @@ def submit():
     # Get only quiz question IDs from session
     question_ids = session.get('quiz_questions', [])
 
+
     score = 0
 
     for question_id in question_ids:
