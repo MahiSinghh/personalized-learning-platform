@@ -78,6 +78,33 @@
         <canvas id="myChart"></canvas>
     </div>
 
+    <!-- Quiz Review -->
+    <div class="card shadow p-4 mb-4">
+        <h4>Quiz Review</h4>
+
+        {% for r in results %}
+        <div class="question-box p-3 mb-3 border rounded">
+
+            <p><b>Q{{ loop.index }}. {{ r.question }}</b></p>
+
+            <p>
+            Your Answer: 
+            <span style="color: {% if r.is_correct %}green{% else %}red{% endif %}; font-weight: bold;">
+                {{ r.selected }}
+            </span>
+            </p>
+
+            {% if not r.is_correct %}
+            <p style="color: green; font-weight: bold;">
+                Correct Answer: {{ r.correct }}
+            </p>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+
+    </div>
+
     <!-- Logout -->
     <div class="text-center mb-5">
         <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>

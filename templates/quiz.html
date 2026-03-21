@@ -43,6 +43,16 @@
             border-color: #0d3b66;
         }
 
+        .question-box:hover {
+            transform: scale(1.01);
+            transition: 0.2s;
+        }
+
+        .form-check-input:checked + .form-check-label {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+
         .btn-submit {
             background-color: #0d3b66;
             border: none;
@@ -60,32 +70,34 @@
 <div class="quiz-card">
 
     <h3 class="quiz-title">Quiz Assessment</h3>
+    <div class="text-end mb-3">
+        <h5>Time Left: <span id="timer">60</span> sec</h5>
+    </div>
 
     <form method="POST" action="/submit">
 
         {% for q in questions %}
-        <div class="question-box">
-            <h5>{{ loop.index }}. {{ q[1] }}</h5>
+        <div class="question-box p-3 mb-4 border rounded shadow-sm">
 
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="q{{ q[0] }}" value="a" required>
-                <label class="form-check-label">{{ q[2] }}</label>
-            </div>
+            <h5 class="mb-3">
+            Q{{ loop.index }}. {{ q[1] }}
+            </h5>
 
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="q{{ q[0] }}" value="b">
-                <label class="form-check-label">{{ q[3] }}</label>
+            {% for option, val in [(q[2], 'a'), (q[3], 'b'), (q[4], 'c'), (q[5], 'd')] %}
+            <div class="form-check mb-2">
+                <input 
+                class="form-check-input" 
+                type="radio" 
+                name="q{{ q[0] }}" 
+                value="{{ val }}" 
+                required
+                >
+                <label class="form-check-label">
+                {{ option }}
+                </label>
             </div>
+            {% endfor %}
 
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="q{{ q[0] }}" value="c">
-                <label class="form-check-label">{{ q[4] }}</label>
-            </div>
-
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="q{{ q[0] }}" value="d">
-                <label class="form-check-label">{{ q[5] }}</label>
-            </div>
         </div>
         {% endfor %}
 
@@ -98,6 +110,26 @@
     </form>
 
 </div>
+<script>
+    let timeLeft = 60;
+    const timerElement = document.getElementById("timer");
+    const message = document.getElementById("time-up-msg");
+
+    const countdown = setInterval(() => {
+        timeLeft--;
+        timerElement.innerText = timeLeft;
+
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+
+            message.style.display = "block";  // show message
+
+            setTimeout(() => {
+                document.querySelector("form").submit();
+            }, 1500); // small delay for UX
+        }
+    }, 1000);
+</script>
 
 </body>
 </html>

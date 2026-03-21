@@ -7,7 +7,7 @@ from flask import flash
 import mysql.connector
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
-
+# from quiz_data import questions
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
@@ -88,15 +88,21 @@ def quiz():
     if 'student_id' not in session:
         return redirect(url_for('login'))
 
-    cursor.execute("SELECT * FROM questions ORDER BY RAND() LIMIT 5")
-    questions = cursor.fetchall()
+    # ✅ Fetch random 5 questions from DB
+    cursor.execute("""
+        SELECT id, question, option_a, option_b, option_c, option_d
+        FROM questions
+        ORDER BY RAND()
+        LIMIT 5
+    """)
+    
+    quiz_questions = cursor.fetchall()
 
-    # Store question IDs in session (important)
-    session['quiz_questions'] = [q[0] for q in questions]
+    # ✅ Store question IDs in session
+    session['quiz_questions'] = [q[0] for q in quiz_questions]
 
-    return render_template("quiz.html", questions=questions)
-
-
+    # ✅ Send to frontend
+    return render_template("quiz.html", questions=quiz_questions)
 
 
 # =========================
@@ -109,33 +115,58 @@ def submit():
 
     student_id = session.get('student_id')
 
-    cursor.execute("SELECT * FROM questions")
-    questions = cursor.fetchall()
-
-    # Get only quiz question IDs from session
+    # Get quiz question IDs from session
     question_ids = session.get('quiz_questions', [])
 
+    if not question_ids:
+        return redirect(url_for('quiz'))
 
     score = 0
+    results = []
 
+    # Loop through each question
     for question_id in question_ids:
-        cursor.execute("SELECT correct_option FROM questions WHERE id=%s", (question_id,))
-        correct_answer = cursor.fetchone()[0]
-
         selected_answer = request.form.get(f'q{question_id}')
 
-        if selected_answer == correct_answer:
+        cursor.execute("""
+            SELECT question, option_a, option_b, option_c, option_d, correct_option 
+            FROM questions WHERE id=%s
+        """, (question_id,))
+        
+        q_data = cursor.fetchone()
+
+        question_text = q_data[0]
+        options = {
+            'a': q_data[1],
+            'b': q_data[2],
+            'c': q_data[3],
+            'd': q_data[4]
+        }
+        correct_answer = q_data[5]
+
+        is_correct = selected_answer == correct_answer
+
+        if is_correct:
             score += 1
 
-        
+        results.append({
+            "question": question_text,
+            "selected": options.get(selected_answer, "Not Answered"),
+            "correct": options[correct_answer],
+            "is_correct": is_correct
+        })
 
-    if score == 0:
+    total = len(question_ids)
+
+    # ✅ Dynamic Level Calculation
+    if score <= total * 0.4:
         level = "Beginner"
-    elif score == 1:
+    elif score <= total * 0.7:
         level = "Intermediate"
     else:
         level = "Advanced"
 
+    # ✅ Feedback Message
     if level == "Beginner":
         message = "Revise basic concepts and practice more."
     elif level == "Intermediate":
@@ -143,22 +174,27 @@ def submit():
     else:
         message = "Excellent performance! Try advanced challenges."
 
-    # Store result
+    # ✅ Store result in DB
     sql = "INSERT INTO results (score, level, student_id) VALUES (%s, %s, %s)"
     cursor.execute(sql, (score, level, student_id))
     db.commit()
 
-    # Fetch history
-    cursor.execute("SELECT score, level FROM results WHERE student_id=%s ORDER BY attempt_date ASC",
-                   (student_id,))
+    # ✅ Fetch history
+    cursor.execute("""
+        SELECT score, level 
+        FROM results 
+        WHERE student_id=%s 
+        ORDER BY attempt_date ASC
+    """, (student_id,))
+    
     history = cursor.fetchall()
 
     scores = [row[0] for row in history]
 
-    # Average calculation
+    # ✅ Average calculation
     average = round(sum(scores) / len(scores), 2) if scores else 0
 
-    # Improvement detection
+    # ✅ Improvement detection
     improvement_message = ""
     status = "neutral"
 
@@ -176,16 +212,20 @@ def submit():
             improvement_message = "Your performance is consistent."
             status = "neutral"
 
-    return render_template("result.html",
-                           score=score,
-                           level=level,
-                           message=message,
-                           history=history,
-                           average=average,
-                           improvement_message=improvement_message,
-                           status=status,
-                           scores=scores)
-
+    # ✅ Final render
+    return render_template(
+        "result.html",
+        score=score,
+        total=total,
+        level=level,
+        message=message,
+        history=history,
+        average=average,
+        improvement_message=improvement_message,
+        status=status,
+        results=results,
+        scores=scores
+    )
 
 # =========================
 # LOGOUT
