@@ -40,6 +40,18 @@
                 <h3>{{ average }}</h3>
             </div>
         </div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+
+        <h3>📊 Topic-wise Analysis</h3>
+
+        {% for topic, data in topic_performance.items() %}
+            <div style="margin: 8px 0;">
+                <strong>{{ topic }}</strong> →
+                {{ data.accuracy }}% ({{ data.level }})
+            </div>
+        {% endfor %}
 
     </div>
 
@@ -139,6 +151,7 @@
         }
     });
 </script>
+
 
 </body>
 </html>
