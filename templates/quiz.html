@@ -1,133 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Quiz - Personalized Learning Platform</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Assessment - StudyAdda</title>
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     <style>
         body {
-            background: linear-gradient(135deg, #e3f2fd, #90caf9);
-            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+            padding: 40px 0;
+        }
+
+        .quiz-container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        /* Sticky Timer Bar */
+        .timer-wrapper {
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
             display: flex;
             justify-content: center;
-            align-items: center;
-        }
-
-        .quiz-card {
-            width: 700px;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-        }
-
-        .quiz-title {
-            text-align: center;
-            font-weight: 700;
-            color: #0d3b66;
             margin-bottom: 30px;
         }
 
-        .question-box {
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #f4f9ff;
+        .timer-box {
+            background: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 2px solid #6366f1;
+            font-weight: 700;
+            color: #1e1b4b;
+        }
+
+        /* Modern Question Card */
+        .q-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .q-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e1b4b;
             margin-bottom: 20px;
         }
 
-        .form-check-input:checked {
-            background-color: #0d3b66;
-            border-color: #0d3b66;
+        /* Custom Radio Buttons (App Style) */
+        .option-container {
+            display: block;
+            position: relative;
+            padding: 15px 15px 15px 50px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
         }
 
-        .question-box:hover {
-            transform: scale(1.01);
-            transition: 0.2s;
+        .option-container:hover {
+            background: #f1f5f9;
+            border-color: #e2e8f0;
         }
 
-        .form-check-input:checked + .form-check-label {
-            font-weight: bold;
-            color: #0d6efd;
+        .option-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
         }
 
-        .btn-submit {
-            background-color: #0d3b66;
-            border: none;
+        .checkmark {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            height: 22px;
+            width: 22px;
+            background-color: #fff;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+        }
+
+        .option-container input:checked ~ .checkmark {
+            background-color: #6366f1;
+            border-color: #6366f1;
+        }
+
+        .option-container input:checked {
+            background-color: #6366f1;
+        }
+
+        .option-container:has(input:checked) {
+            background: #eef2ff;
+            border-color: #6366f1;
+            color: #4f46e5;
             font-weight: 600;
         }
 
-        .btn-submit:hover {
-            background-color: #082f4d;
+        .submit-section {
+            margin-top: 40px;
+            padding-bottom: 60px;
         }
     </style>
 </head>
 
 <body>
 
-<div class="quiz-card">
-
-    <h3 class="quiz-title">Quiz Assessment</h3>
-    <div class="text-end mb-3">
-        <h5>Time Left: <span id="timer">60</span> sec</h5>
+<div class="container quiz-container">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Quiz Assessment ✍️</h2>
+        <p class="text-muted">Answer all questions to get your personalized analysis.</p>
     </div>
 
-    <form method="POST" action="/submit">
+    <div class="timer-wrapper">
+        <div class="timer-box">
+            <i class="fa-regular fa-clock me-2 text-primary"></i>
+            Time Left: <span id="timer" class="text-primary">60</span>s
+        </div>
+    </div>
 
+    <form id="quizForm" method="POST" action="/submit">
         {% for q in questions %}
-        <div class="question-box p-3 mb-4 border rounded shadow-sm">
-
-            <h5 class="mb-3">
-            Q{{ loop.index }}. {{ q[1] }}
-            </h5>
-
-            {% for option, val in [(q[2], 'a'), (q[3], 'b'), (q[4], 'c'), (q[5], 'd')] %}
-            <div class="form-check mb-2">
-                <input 
-                class="form-check-input" 
-                type="radio" 
-                name="q{{ q[0] }}" 
-                value="{{ val }}" 
-                required
-                >
-                <label class="form-check-label">
-                {{ option }}
-                </label>
+        <div class="q-card">
+            <div class="q-text">
+                <span class="text-primary me-2">Q{{ loop.index }}.</span> {{ q[1] }}
             </div>
-            {% endfor %}
 
+            <div class="options-group">
+                {% for option, val in [(q[2], 'a'), (q[3], 'b'), (q[4], 'c'), (q[5], 'd')] %}
+                <label class="option-container">
+                    {{ option }}
+                    <input type="radio" name="q{{ q[0] }}" value="{{ val }}" required>
+                    <span class="checkmark"></span>
+                </label>
+                {% endfor %}
+            </div>
         </div>
         {% endfor %}
 
-        <div class="text-center">
-            <button type="submit" class="btn btn-submit text-white px-5">
-                Submit Quiz
-            </button>
+        <div id="time-up-msg" class="alert alert-danger text-center shadow-sm d-none" role="alert">
+            <i class="fa-solid fa-hourglass-end me-2"></i> Time's up! Submitting your answers...
         </div>
 
+        <div class="text-center submit-section">
+            <button type="submit" class="btn btn-primary-smart btn-smart btn-lg px-5">
+                Finish & View Results <i class="fa-solid fa-arrow-right ms-2"></i>
+            </button>
+        </div>
     </form>
-
 </div>
+
 <script>
     let timeLeft = 60;
     const timerElement = document.getElementById("timer");
     const message = document.getElementById("time-up-msg");
+    const quizForm = document.getElementById("quizForm");
 
     const countdown = setInterval(() => {
         timeLeft--;
         timerElement.innerText = timeLeft;
 
+        if (timeLeft <= 10) {
+            timerElement.parentElement.style.borderColor = "#ef4444";
+            timerElement.classList.replace('text-primary', 'text-danger');
+        }
+
         if (timeLeft <= 0) {
             clearInterval(countdown);
-
-            message.style.display = "block";  // show message
+            message.classList.remove("d-none");
+            
+            // Disable all inputs to prevent last-second changes
+            const inputs = quizForm.querySelectorAll('input');
+            inputs.forEach(input => input.disabled = true);
 
             setTimeout(() => {
-                document.querySelector("form").submit();
-            }, 1500); // small delay for UX
-        }
+                quizForm.submit();
+            }, 1500);
+        </div>
     }, 1000);
 </script>
 
