@@ -1,60 +1,105 @@
+/* ===== 1. MODERN VARIABLES ===== */
+:root {
+    --primary-color: #6366f1;
+    --secondary-color: #4f46e5;
+    --dark-blue: #1e1b4b;
+    --light-bg: #f8fafc;
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.05);
+    --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== 2. GLOBAL RESET ===== */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f6f9;
     margin: 0;
-    padding: 0;
+    font-family: 'Poppins', sans-serif; /* Humne index.html mein ye link kiya tha */
+    background-color: var(--light-bg);
+    color: #334155;
+    line-height: 1.6;
 }
 
-.container {
-    width: 60%;
-    margin: 40px auto;
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+/* Background Gradients for specific pages like Login/Register */
+.auth-page {
+    background: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
+    min-height: 100vh;
 }
 
-h2, h3 {
-    color: #333;
+/* ===== 3. MODERN CARD COMPONENT ===== */
+/* Ye Quiz aur Dashboard cards ke liye kaam aayega */
+.smart-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    padding: 2rem;
+    transition: var(--transition);
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
+.smart-card:hover {
+    transform: translateY(-5px);
 }
 
-table, th, td {
-    border: 1px solid #ddd;
+/* ===== 4. SMART BUTTONS ===== */
+.btn-smart {
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: var(--transition);
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-th {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px;
+.btn-primary-smart {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white !important;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
 }
 
-td {
-    padding: 8px;
-    text-align: center;
+.btn-primary-smart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4);
+    opacity: 0.95;
 }
 
-canvas {
-    margin-top: 20px;
-}
-.improve {
-    color: green;
-    font-weight: bold;
-}
-
-.decrease {
-    color: red;
-    font-weight: bold;
+/* ===== 5. FORM INPUTS ===== */
+.smart-input {
+    border-radius: 12px !important;
+    padding: 12px 15px !important;
+    border: 1px solid #e2e8f0 !important;
+    background-color: #ffffff !important;
+    transition: var(--transition) !important;
 }
 
-.neutral {
-    color: orange;
-    font-weight: bold;
+.smart-input:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
 }
 
+/* ===== 6. QUIZ SPECIFIC ===== */
+.timer-badge {
+    background: #fee2e2;
+    color: #ef4444;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-weight: 700;
+}
 
+.option-box {
+    border: 2px solid #f1f5f9;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.option-box:hover {
+    background-color: #f8fafc;
+    border-color: var(--primary-color);
+}
