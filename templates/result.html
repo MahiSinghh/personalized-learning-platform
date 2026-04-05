@@ -100,10 +100,24 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                </div>
+                    </div>{% if recommendations %}
+                    <div class="mt-4">
+                        <h5 class="fw-bold text-danger"><i class="fa-solid fa-lightbulb me-2"></i> Recommended for Improvement:</h5>
+                        <div class="row g-2">
+                            {% for rec in recommendations %}
+                            <div class="col-md-6">
+                                <a href="{{ rec.link }}" target="_blank" class="btn btn-outline-danger w-100 text-start btn-smart">
+                                    <i class="fa-brands fa-youtube me-2"></i> Learn {{ rec.topic }}
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
             </div>
         </div>
     </div>
+    
 
     <div class="mt-5">
         <h4 class="fw-bold mb-4">Detailed Quiz Review</h4>
