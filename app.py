@@ -1,10 +1,145 @@
 # ... (Top imports same rahenge) ...
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+from flask import flash
+import mysql.connector
+from flask import Flask, render_template, request, session, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
+# Iski ab zarurat nahi padegi kyunki hum DB use kar rahe hain, par rehne do error nahi aayega
+#from quiz_data import questions as questions_data 
+
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY")
+
+# Database connection
+db = mysql.connector.connect(
+    host=os.getenv("DB_HOST"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    database=os.getenv("DB_NAME")
+)
+cursor = db.cursor()
 
 # Helper Function: Generate YouTube Links
 def get_youtube_link(topic):
     # Simple search link generator
     search_query = topic.replace(" ", "+") + "+tutorial"
     return f"https://www.youtube.com/results?search_query={search_query}"
+
+# =========================
+
+# REGISTER ROUTE
+
+# =========================
+
+@app.route('/register', methods=['GET', 'POST'])
+
+def register():
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        hashed_password = generate_password_hash(password)
+        # Check if email already exists
+
+        cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
+
+        existing_user = cursor.fetchone()
+
+
+
+        if existing_user:
+
+            flash("Email already registered!", "danger")
+
+            return redirect(url_for('register'))
+
+
+
+
+
+        cursor.execute(
+
+            "INSERT INTO students (name, email, password) VALUES (%s, %s, %s)",
+
+            (name, email, hashed_password)
+
+        )
+
+        db.commit()
+
+
+
+        flash("Registration successful! Please login.", "success")
+
+        return redirect(url_for('login'))
+
+
+
+    return render_template("register.html")
+
+
+
+# home route
+
+@app.route('/')
+
+def home():
+
+    return render_template("index.html")
+
+
+
+
+
+# =========================
+
+# LOGIN ROUTE
+
+# =========================
+
+@app.route('/login', methods=['GET', 'POST'])
+
+def login():
+
+    if request.method == 'POST':
+
+        email = request.form.get('email')
+
+        password = request.form.get('password')
+
+
+
+        cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
+
+        user = cursor.fetchone()
+
+
+
+        if user and check_password_hash(user[3], password):
+
+            session['student_id'] = user[0]
+
+            session['name'] = user[1]
+
+            session['user'] = email
+
+            return redirect(url_for('quiz'))
+
+        else:
+
+            flash("Invalid email or password!", "danger")
+
+            return redirect(url_for('login'))
+
+
+
+   
+
+    return render_template("login.html")
 
 # =========================
 # QUIZ ROUTE (Updated)
@@ -131,3 +266,26 @@ def submit():
         topic_performance=topic_performance,
         recommendations=recommendations # Pass this to HTML!
     )
+
+# =========================
+
+# LOGOUT
+
+# =========================
+
+@app.route('/logout')
+
+def logout():
+
+    session.clear()
+
+    return redirect(url_for('login'))
+
+
+
+
+
+if __name__ == '__main__':
+
+    app.run(debug=True)
+
