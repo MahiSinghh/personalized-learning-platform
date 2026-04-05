@@ -1,92 +1,75 @@
-# 🚀 Personalized Adaptive Learning Platform
+# 🚀 StudyAdda: Personalized Adaptive Learning Platform
 
-A Flask + MySQL based intelligent quiz platform that generates dynamic quizzes, analyzes user performance, and provides personalized feedback based on responses.
-
----
-
-## ⭐ Key Highlights
-
-* Dynamic quiz generation from database
-* Randomized questions for each attempt
-* Timer-based quiz with auto-submit
-* Answer review with correct vs selected comparison
-* Performance tracking with history and average score
-* Improvement detection (progress analysis)
-* Secure authentication with hashed passwords
+An intelligent Flask-based ecosystem designed to identify learning gaps using **MySQL-driven analytics** and provide **automated AI-guided study recommendations**.
 
 ---
 
-## 🚀 Features
-
-* Secure authentication system (hashed passwords)
-* Session-based user tracking
-* Dynamic quiz generation using MySQL database
-* Timer functionality for quizzes
-* Result dashboard with:
-
-  * Score and level (Beginner / Intermediate / Advanced)
-  * Performance history
-  * Average score calculation
-  * Improvement detection
-* Answer review system (correct vs user answers)
-* Chart-based analytics using Chart.js
-* Adaptive difficulty engine (planned)
+## ✨ Key Highlights
+* **🧠 Weak Topic Detection:** Automatically identifies sub-topics (e.g., Python Loops, SQL Joins) where the user needs improvement.
+* **📺 Smart Recommendations:** Generates dynamic YouTube tutorial links specifically for "Weak" topics to bridge knowledge gaps.
+* **📉 Learning Curve Visualization:** Real-time performance tracking using **Chart.js** line graphs.
+* **🛡️ Secure Industry Standards:** Password hashing with `Werkzeug` and session-based user security.
+* **⏲️ Integrated Exam Timer:** JavaScript-powered countdown with auto-submit to simulate real test environments.
 
 ---
 
 ## 🛠️ Tech Stack
-
-* **Backend:** Python (Flask)
-* **Database:** MySQL
-* **Frontend:** HTML, CSS, Bootstrap
-* **Visualization:** Chart.js
+| Component | Technology |
+| :--- | :--- |
+| **Backend** | Python (Flask) |
+| **Database** | MySQL (Relational Schema) |
+| **Frontend** | HTML5, CSS3 (Glassmorphism UI), Bootstrap 5 |
+| **Analytics** | Chart.js, FontAwesome Icons |
+| **Environment** | VS Code, Virtualenv (.venv) |
 
 ---
 
-## ▶️ How to Run
+## ▶️ Setup & Installation (VS Code)
 
-1. Clone the repository:
-
+1. **Clone the repository:**
    ```bash
    git clone <your-repo-link>
-   cd <project-folder>
-   ```
+   cd personalized_learning
+Create & Activate Virtual Environment:
 
-2. Install dependencies:
+Bash
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Mac/Linux:
+source .venv/bin/activate
+Install Dependencies:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+Bash
+pip install -r requirements.txt
+Environment Variables (.env):
+Create a .env file in the root folder:
 
-3. Set up MySQL:
+Code snippet
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=learning_platform
+SECRET_KEY=generate_a_random_string
+Database Initialization:
+Import the database.sql file into your MySQL Workbench to set up tables and sample questions.
 
-   * Create database
-   * Create required tables (`students`, `questions`, `results`)
+Run Application:
 
-4. Run the Flask app:
+Bash
+python app.py
+Access at: http://127.0.0.1:5000
 
-   ```bash
-   python app.py
-   ```
+📊 Future Roadmap
+🤖 AI-Driven Question Engine: Integrate Gemini/OpenAI API to generate adaptive questions that change difficulty based on the user's real-time performance.
 
-5. Open in browser:
+🖥️ VS Code Extension: Develop a dedicated VS Code Sidebar Extension allowing students to take quick "Coding Concept Checks" without leaving their editor.
 
-   ```
-   http://127.0.0.1:5000
-   ```
+🔍 Contextual Deep-Link Discovery: Use AI to map specific wrong answers to exact timestamps in educational videos for pinpoint learning.
 
----
+🏆 Peer-to-Peer Challenges: A global leaderboard and 1v1 "Quiz Battles" to gamify the learning experience.
 
-## 📊 Future Enhancements
+📜 Verified Skill Badges: Automated PDF certificate generation for users reaching "Advanced" status in specific domains.
 
-* Topic-wise performance analysis
-* Difficulty-based adaptive quiz system
-* Admin dashboard
-* AI-based recommendation engine
-* Cloud deployment
-
----
-
-## 👩‍💻 Developed By
-
-**Mahi Singh**
+👩‍💻 Developed By
+Mahi Singh
