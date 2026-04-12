@@ -1,186 +1,154 @@
-# ... (Top imports same rahenge) ...
-from dotenv import load_dotenv
 import os
-
-from dbm import sqlite3
-load_dotenv()
-
-from flask import flash
 import sqlite3
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-# Iski ab zarurat nahi padegi kyunki hum DB use kar rahe hain, par rehne do error nahi aayega
-#from quiz_data import questions as questions_data 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-# Database connection
-db = sqlite3.connect("database.db", check_same_thread=False)
+# Database connection helper
+def get_db():
+    conn = sqlite3.connect("database.db", check_same_thread=False)
+    conn.row_factory = sqlite3.Row  # Results ko dictionary ki tarah access karne ke liye
+    return conn
+
+db = get_db()
 cursor = db.cursor()
 
+# Updated Table Schema (Added email and password for Login/Signup)
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
-    score INTEGER
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    score INTEGER DEFAULT 0
 )
 """)
-
 db.commit()
 
 # Helper Function: Generate YouTube Links
 def get_youtube_link(topic):
-    # Simple search link generator
     search_query = topic.replace(" ", "+") + "+tutorial"
     return f"https://www.youtube.com/results?search_query={search_query}"
 
-# =========================
 
+# =========================
 # REGISTER ROUTE
-
 # =========================
-
 @app.route('/register', methods=['GET', 'POST'])
-
 def register():
-
     if request.method == 'POST':
         name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
-        hashed_password = generate_password_hash(password)
-        # Check if email already exists
-
-        cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
-
-        existing_user = cursor.fetchone()
-
-
-
-        if existing_user:
-
-            flash("Email already registered!", "danger")
-
+        
+        if not name or not email or not password:
+            flash("All fields are required!", "danger")
             return redirect(url_for('register'))
 
+        hashed_password = generate_password_hash(password)
+        
+        # SQLite Connection (Local thread safety ke liye har baar fetch karein)
+        local_db = get_db()
+        local_cursor = local_db.cursor()
 
+        # Check if email already exists in 'users' table (NOT 'students')
+        local_cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        existing_user = local_cursor.fetchone()
 
+        if existing_user:
+            flash("Email already registered!", "danger")
+            return redirect(url_for('register'))
 
-
-        cursor.execute(
-
-            "INSERT INTO students (name, email, password) VALUES (%s, %s, %s)",
-
-            (name, email, hashed_password)
-
-        )
-
-        db.commit()
-
-
-
-        flash("Registration successful! Please login.", "success")
-
-        return redirect(url_for('login'))
-
-
+        # Insert into 'users' table using '?' placeholders
+        try:
+            local_cursor.execute(
+                "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+                (name, email, hashed_password)
+            )
+            local_db.commit()
+            flash("Registration successful! Please login.", "success")
+            return redirect(url_for('login'))
+        except Exception as e:
+            print(f"Error: {e}")
+            flash("An error occurred during registration.", "danger")
+            return redirect(url_for('register'))
 
     return render_template("register.html")
 
-
-
-# home route
-
+# HOME ROUTE
 @app.route('/')
-
 def home():
-
     return render_template("index.html")
 
 
 
-
-
 # =========================
-
 # LOGIN ROUTE
-
 # =========================
-
 @app.route('/login', methods=['GET', 'POST'])
-
 def login():
-
     if request.method == 'POST':
-
         email = request.form.get('email')
-
         password = request.form.get('password')
 
+        local_db = get_db()
+        local_cursor = local_db.cursor()
 
+        # Query updated: 'users' table and '?' placeholder
+        local_cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        user = local_cursor.fetchone()
 
-        cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
-
-        user = cursor.fetchone()
-
-
-
-        if user and check_password_hash(user[3], password):
-
-            session['student_id'] = user[0]
-
-            session['name'] = user[1]
-
-            session['user'] = email
-
+        # user[3] password hai, user[0] id, user[1] username
+        if user and check_password_hash(user['password'], password):
+            session['student_id'] = user['id']
+            session['name'] = user['username']
+            session['user'] = user['email']
+            
+            flash(f"Welcome back, {user['username']}!", "success")
             return redirect(url_for('quiz'))
-
         else:
-
             flash("Invalid email or password!", "danger")
-
             return redirect(url_for('login'))
 
-
-
-   
-
     return render_template("login.html")
-
 # =========================
-# QUIZ ROUTE (Updated)
+# QUIZ ROUTE (Fixed for SQLite)
 # =========================
 @app.route('/quiz')
 def quiz():
     if 'student_id' not in session:
         return redirect(url_for('login'))
 
-    # ✅ Added 'topic' and 'correct_option' in the query
-    cursor.execute("""
+    local_db = get_db()
+    local_cursor = local_db.cursor()
+
+    # Fixed: RANDOM() instead of RAND()
+    local_cursor.execute("""
         SELECT id, question, option_a, option_b, option_c, option_d, topic, correct_option
         FROM questions
-        ORDER BY RAND()
+        ORDER BY RANDOM()
         LIMIT 5
     """)
-    quiz_questions = cursor.fetchall()
+    quiz_questions = local_cursor.fetchall()
     
-    # Store full question data in session to avoid multiple DB calls during submit
-    # Format: { id: { 'correct': 'a', 'topic': 'loops' }, ... }
     quiz_meta = {}
     questions_for_frontend = []
 
     for q in quiz_questions:
-        quiz_meta[str(q[0])] = {'correct': q[7].strip().lower(), 'topic': q[6]}
+        # q['id'] use kar rahe hain kyunki Row_factory enabled hai
+        quiz_meta[str(q['id'])] = {'correct': q['correct_option'].strip().lower(), 'topic': q['topic']}
         questions_for_frontend.append(q)
 
     session['quiz_meta'] = quiz_meta
-    session['quiz_question_ids'] = list(quiz_meta.keys())
-
     return render_template("quiz.html", questions=questions_for_frontend)
 
 # =========================
-# SUBMIT ROUTE (Optimized)
+# SUBMIT ROUTE (Fixed for SQLite)
 # =========================
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -192,6 +160,9 @@ def submit():
     
     if not quiz_meta:
         return redirect(url_for('quiz'))
+
+    local_db = get_db()
+    local_cursor = local_db.cursor()
 
     score = 0
     results = []
@@ -212,66 +183,52 @@ def submit():
             score += 1
             topic_stats[topic]["correct"] += 1
 
-        # Fetch question text for review
-        cursor.execute("SELECT question, option_a, option_b, option_c, option_d FROM questions WHERE id=%s", (q_id,))
-        q_data = cursor.fetchone()
+        # Fixed: ? placeholder
+        local_cursor.execute("SELECT question, option_a, option_b, option_c, option_d FROM questions WHERE id = ?", (q_id,))
+        q_data = local_cursor.fetchone()
         
-        # Map letters to text
-        opt_map = {'a': q_data[1], 'b': q_data[2], 'c': q_data[3], 'd': q_data[4]}
+        opt_map = {'a': q_data['option_a'], 'b': q_data['option_b'], 'c': q_data['option_c'], 'd': q_data['option_d']}
 
         results.append({
-            "question": q_data[0],
+            "question": q_data['question'],
             "selected": opt_map.get(selected, "Not Answered"),
             "correct": opt_map.get(correct),
             "is_correct": is_correct
         })
 
-    # --- Logic for Level, History & Average (Same as yours, just keep it) ---
     total = len(quiz_meta)
     level = "Beginner" if score <= total*0.4 else "Intermediate" if score <= total*0.7 else "Advanced"
     
-    cursor.execute("INSERT INTO results (score, level, student_id) VALUES (%s, %s, %s)", (score, level, student_id))
-    db.commit()
+    # Fixed: ? placeholders and Ensure 'results' table exists
+    local_cursor.execute("INSERT INTO results (score, level, student_id) VALUES (?, ?, ?)", (score, level, student_id))
+    local_db.commit()
 
-    cursor.execute("SELECT score, level FROM results WHERE student_id=%s ORDER BY attempt_date ASC", (student_id,))
-    history = cursor.fetchall()
-    scores = [row[0] for row in history]
+    local_cursor.execute("SELECT score, level FROM results WHERE student_id = ? ORDER BY id ASC", (student_id,))
+    history = local_cursor.fetchall()
+    scores = [row['score'] for row in history]
     average = round(sum(scores)/len(scores), 2) if scores else 0
 
-    # ✅ SMART ANALYSIS & YOUTUBE RECOMMENDATIONS
+    # Recommendation Logic
     topic_performance = {}
     recommendations = []
 
     for topic, data in topic_stats.items():
         accuracy = (data["correct"] / data["total"]) * 100
-        
-        if accuracy >= 75:
-            tag, status = "Strong ✔️", "success"
-        elif accuracy >= 50:
-            tag, status = "Average ⚠️", "warning"
+        if accuracy >= 75: tag, status = "Strong ✔️", "success"
+        elif accuracy >= 50: tag, status = "Average ⚠️", "warning"
         else:
             tag, status = "Weak ❌", "danger"
-            # Add recommendation for weak topics
-            recommendations.append({
-                "topic": topic,
-                "link": get_youtube_link(topic)
-            })
+            recommendations.append({"topic": topic, "link": get_youtube_link(topic)})
 
-        topic_performance[topic] = {
-            "accuracy": round(accuracy, 2),
-            "level": tag,
-            "status": status
-        }
+        topic_performance[topic] = {"accuracy": round(accuracy, 2), "level": tag, "status": status}
 
     return render_template(
         "result.html",
         score=score, total=total, level=level,
-        history=history[::-1], # Recent first
-        average=average,
-        results=results,
-        scores=scores,
+        history=history[::-1], average=average,
+        results=results, scores=scores,
         topic_performance=topic_performance,
-        recommendations=recommendations # Pass this to HTML!
+        recommendations=recommendations
     )
 
 # =========================
