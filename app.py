@@ -1,26 +1,33 @@
 # ... (Top imports same rahenge) ...
 from dotenv import load_dotenv
 import os
+
+from dbm import sqlite3
 load_dotenv()
 
 from flask import flash
-import mysql.connector
+import sqlite3
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 # Iski ab zarurat nahi padegi kyunki hum DB use kar rahe hain, par rehne do error nahi aayega
 #from quiz_data import questions as questions_data 
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
 # Database connection
-db = mysql.connector.connect(
-    host=os.getenv("DB_HOST"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    database=os.getenv("DB_NAME")
-)
+db = sqlite3.connect("database.db", check_same_thread=False)
 cursor = db.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    score INTEGER
+)
+""")
+
+db.commit()
 
 # Helper Function: Generate YouTube Links
 def get_youtube_link(topic):
