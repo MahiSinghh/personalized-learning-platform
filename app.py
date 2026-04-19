@@ -146,11 +146,11 @@ def quiz():
     local_cursor = local_db.cursor()
 
     # Fixed: RANDOM() instead of RAND()
+# Quiz Route mein LIMIT badal dein
     local_cursor.execute("""
-        SELECT id, question, option_a, option_b, option_c, option_d, topic, correct_option
-        FROM questions
-        ORDER BY RANDOM()
-        LIMIT 5
+        SELECT * FROM questions 
+        ORDER BY RANDOM() 
+        LIMIT 8
     """)
     quiz_questions = local_cursor.fetchall()
     
