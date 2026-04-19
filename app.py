@@ -9,32 +9,50 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
-# Database connection helper
+# --- STEP 4: Path Handling (Linux/Render Compatibility) ---
+# Ye code database.db ka sahi rasta dhoondega chahe aap Windows pe ho ya Render (Linux) pe.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE = os.path.join(BASE_DIR, "database.db")
+
 def get_db():
-    conn = sqlite3.connect("database.db", check_same_thread=False)
-    conn.row_factory = sqlite3.Row  # Results ko dictionary ki tarah access karne ke liye
+    # Yahan humne dynamic 'DATABASE' path use kiya hai
+    conn = sqlite3.connect(DATABASE, check_same_thread=False)
+    conn.row_factory = sqlite3.Row  
     return conn
 
-db = get_db()
-cursor = db.cursor()
+# Database Tables Initialize karne ke liye ek function
+def init_db():
+    db = get_db()
+    cursor = db.cursor()
+    # Users Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        score INTEGER DEFAULT 0
+    )
+    """)
+    # Results Table (Baaki tables bhi yahi initialize honi chahiye)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        score INTEGER,
+        level TEXT,
+        student_id INTEGER,
+        attempt_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    db.commit()
 
-# Updated Table Schema (Added email and password for Login/Signup)
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    score INTEGER DEFAULT 0
-)
-""")
-db.commit()
+# App start hote hi table check karega
+init_db()
 
 # Helper Function: Generate YouTube Links
 def get_youtube_link(topic):
     search_query = topic.replace(" ", "+") + "+tutorial"
     return f"https://www.youtube.com/results?search_query={search_query}"
-
 
 # =========================
 # REGISTER ROUTE
